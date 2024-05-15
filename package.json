@@ -5,7 +5,7 @@
     "express": "^4.19.2",
     "mssql": "^10.0.2",
     "scripts": {
-      "start":  "node index.js"
+      "start":  "node server.js"
     }
   }
 }
