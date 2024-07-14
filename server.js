@@ -14,7 +14,7 @@ app.use(cors());
 // Configuración de la conexión a la base de datos
 const dbConfig = {
   user: 'CloudSA365db3f2',
-  password: 'Andresrozo3',
+  password: 'Andresrozo#1',
   server: 'proyectoudistrital.database.windows.net',
   database: 'preferencias',
   options: {
@@ -125,7 +125,7 @@ app.get('/api/preferencias/:idProfile/exists', async (req, res) => {
 app.get('/api/preferencias/:idProfile', async (req, res) => {
   try {
     const { idProfile } = req.params;
-    const result = await mssql.query(`SELECT * FROM preferencias WHERE idprofile = '${idProfile}'`);
+    const result = await mssql.query(`SELECT preferencia FROM preferencias WHERE idprofile = '${idProfile}'`);
     res.json(result.recordset);
   } catch (error) {
     console.error('Error querying the database:', error);
@@ -151,52 +151,42 @@ app.get('/api/preferencias/:preferencia/email', async (req, res) => {
   }
 });
 
+
 app.post('/api/notification-permission', async (req, res) => {
   try {
-    const { userId, permissionGranted } = req.body;
+    const { userid, token } = req.body;
 
-    // Verificar si el usuario ya tiene un registro en la tabla de permisos
-    const existingRecord = await mssql.query(`
-      SELECT * FROM permisos WHERE userId = '${userId}'
+    // Insertar el token sin comprobar si ya existe un registro
+    const result = await mssql.query(`
+      INSERT INTO tokens (userId, token)
+      VALUES ('${userid}', '${token}')
     `);
 
-    if (existingRecord.recordset.length > 0) {
-      // Si ya existe un registro para este usuario, actualizamos el permiso
-      await mssql.query(`
-        UPDATE permisos 
-        SET permissionGranted = ${permissionGranted ? 1 : 0}
-        WHERE userId = '${userId}'
-      `);
-    } else {
-      // Si no existe un registro para este usuario, lo insertamos
-      await mssql.query(`
-        INSERT INTO permisos (userId, permissionGranted)
-        VALUES ('${userId}', ${permissionGranted ? 1 : 0})
-      `);
-    }
-
-    res.status(200).json({ message: 'Permiso de notificación guardado correctamente' });
+    res.status(200).json({ message: 'Token FCM guardado exitosamente' });
   } catch (error) {
-    console.error('Error al guardar el permiso de notificación:', error);
+    console.error('Error al guardar el token FCM:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
-app.get('/api/notification-permission/users', async (req, res) => {
+app.get('/api/token/:preferencia/tokens', async (req, res) => {
   try {
-    // Consultar la base de datos para obtener los usuarios con permisos de notificación
-    const result = await mssql.query(`
-      SELECT userId FROM permisos WHERE permissionGranted = 1
-    `);
-
-    // Obtener los userId de los registros devueltos
-    const users = result.recordset.map(record => record.userId);
-
-    // Devolver la lista de usuarios con permisos de notificación
-    res.status(200).json(users);
+    const { preferencia } = req.params;
+    // Dividir el parámetro de preferencia en un array
+    const preferencias = preferencia.split(',');
+    // Construir la consulta SQL con una cláusula WHERE que use LIKE
+    const query = `
+    select t.token  
+    from dbo.tokens t 
+    join  dbo.preferencias p 
+    on p.idprofile= t.userId
+    where p.preferencia LIKE '%${preferencias[0]}%'`;
+    // Ejecutar la consulta SQL
+    const result = await mssql.query(query);
+    res.json(result.recordset);
   } catch (error) {
-    console.error('Error obteniendo usuarios con permisos de notificación:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('Error querying the database:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
