@@ -81,29 +81,21 @@ app.post('/api/preferencias', async (req, res) => {
 
     // Verificar si ya existen preferencias para el idprofile actual
     const existingRecord = await mssql.query(`
-      SELECT preferencia FROM preferencias WHERE idprofile = '${idprofile}'
+      SELECT * FROM preferencias WHERE idprofile = '${idprofile}'
     `);
 
-    let newPreferences = preferencias;
-
     if (existingRecord.recordset.length > 0) {
-      // Si ya existen preferencias, las combinamos con las nuevas
-      const existingPreferences = JSON.parse(existingRecord.recordset[0].preferencia);
-
-      // Combinamos las preferencias existentes con las nuevas, eliminando duplicados
-      newPreferences = [...new Set([...existingPreferences, ...preferencias])];
-
-      // Actualizamos las preferencias combinadas
-      await mssql.query(`
+      // Si ya existen preferencias, actualizamos en lugar de insertar
+      const result = await mssql.query(`
         UPDATE preferencias 
-        SET name = '${name}', email = '${email}', preferencia = '${JSON.stringify(newPreferences)}'
+        SET name = '${name}', email = '${email}', preferencia = '${JSON.stringify(preferencias)}'
         WHERE idprofile = '${idprofile}'
       `);
     } else {
-      // Si no existen preferencias, insertamos las nuevas
-      await mssql.query(`
+      // Si no existen preferencias, insertamos
+      const result = await mssql.query(`
         INSERT INTO preferencias (idprofile, name, email, preferencia)
-        VALUES ('${idprofile}', '${name}', '${email}', '${JSON.stringify(newPreferences)}')
+        VALUES ('${idprofile}', '${name}', '${email}', '${JSON.stringify(preferencias)}')
       `);
     }
 
@@ -113,7 +105,6 @@ app.post('/api/preferencias', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
-
 
 // VERIFICA SI EL ID YA ESTA REGISTRADO EN LA BD PARA ACTUALIZAR O CREAR NUEVOS REGISTROS.
 
