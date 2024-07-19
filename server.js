@@ -81,21 +81,27 @@ app.post('/api/preferencias', async (req, res) => {
 
     // Verificar si ya existen preferencias para el idprofile actual
     const existingRecord = await mssql.query(`
-      SELECT * FROM preferencias WHERE idprofile = '${idprofile}'
+      SELECT preferencia FROM preferencias WHERE idprofile = '${idprofile}'
     `);
 
+    let newPreferences = preferencias;
+
     if (existingRecord.recordset.length > 0) {
-      // Si ya existen preferencias, actualizamos en lugar de insertar
-      const result = await mssql.query(`
+      // Si ya existen preferencias, las combinamos con las nuevas
+      const existingPreferences = JSON.parse(existingRecord.recordset[0].preferencia);
+      newPreferences = { ...existingPreferences, ...preferencias };
+
+      // Actualizamos las preferencias combinadas
+      await mssql.query(`
         UPDATE preferencias 
-        SET name = '${name}', email = '${email}', preferencia = '${JSON.stringify(preferencias)}'
+        SET name = '${name}', email = '${email}', preferencia = '${JSON.stringify(newPreferences)}'
         WHERE idprofile = '${idprofile}'
       `);
     } else {
-      // Si no existen preferencias, insertamos
-      const result = await mssql.query(`
+      // Si no existen preferencias, insertamos las nuevas
+      await mssql.query(`
         INSERT INTO preferencias (idprofile, name, email, preferencia)
-        VALUES ('${idprofile}', '${name}', '${email}', '${JSON.stringify(preferencias)}')
+        VALUES ('${idprofile}', '${name}', '${email}', '${JSON.stringify(newPreferences)}')
       `);
     }
 
