@@ -88,7 +88,7 @@ app.post('/api/preferencias', async (req, res) => {
 
     if (existingRecord.recordset.length > 0) {
       // Si ya existen preferencias, las combinamos con las nuevas
-      const existingPreferences = JSON.parse(existingRecord.recordset[0].preferencia);
+      const existingPreferences = JSON.parse(existingRecord.recordset.preferencia);
       newPreferences = { ...existingPreferences, ...preferencias };
 
       // Actualizamos las preferencias combinadas
