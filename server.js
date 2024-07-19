@@ -88,8 +88,10 @@ app.post('/api/preferencias', async (req, res) => {
 
     if (existingRecord.recordset.length > 0) {
       // Si ya existen preferencias, las combinamos con las nuevas
-      const existingPreferences = JSON.parse(existingRecord.recordset.preferencia);
-      newPreferences = { ...existingPreferences, ...preferencias };
+      const existingPreferences = JSON.parse(existingRecord.recordset[0].preferencia);
+
+      // Combinamos las preferencias existentes con las nuevas, eliminando duplicados
+      newPreferences = [...new Set([...existingPreferences, ...preferencias])];
 
       // Actualizamos las preferencias combinadas
       await mssql.query(`
@@ -111,6 +113,7 @@ app.post('/api/preferencias', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
 
 // VERIFICA SI EL ID YA ESTA REGISTRADO EN LA BD PARA ACTUALIZAR O CREAR NUEVOS REGISTROS.
 
